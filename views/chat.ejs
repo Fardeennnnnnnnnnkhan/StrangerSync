@@ -45,13 +45,13 @@
       }
 
       .control-container {
-        background-color: #6df966;
         padding: 20px;
         border-radius: 50%;
         display: flex;
         justify-content: center;
         align-items: center;
         cursor: pointer;
+        background: transparent;
       }
 
       .control-container svg {
@@ -73,6 +73,112 @@
           height: 20px;
           width: 20px;
         }
+      }
+
+      .tg-bubble {
+        max-width: 70%;
+        padding: 0.75rem 1.2rem;
+        border-radius: 1.5rem;
+        margin-bottom: 0.25rem;
+        font-size: 1.05rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+        word-break: break-word;
+        position: relative;
+        background: #fff;
+      }
+      .tg-bubble.sent {
+        border: 2px solid #229ed9;
+        color: #222;
+        align-self: flex-end;
+        border-bottom-right-radius: 0.4rem;
+        margin-left: auto;
+      }
+      .tg-bubble.received {
+        border: 2px solid #f472b6;
+        color: #222;
+        align-self: flex-start;
+        border-bottom-left-radius: 0.4rem;
+        margin-right: auto;
+      }
+      .tg-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      .tg-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #d1eaff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: #229ed9;
+        font-size: 1.1rem;
+        box-shadow: 0 1px 4px rgba(34, 158, 217, 0.08);
+      }
+      .send-btn {
+        border: none;
+        border-radius: 50%;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 8px rgba(34, 158, 217, 0.15);
+        color: #229ed9;
+        font-size: 1.5rem;
+        margin-left: 0.5rem;
+        transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+        cursor: pointer;
+        background: transparent;
+      }
+      .send-btn.send-main {
+        background: linear-gradient(135deg, #229ed9 0%, #48c6ef 100%);
+        color: #fff;
+      }
+      .send-btn.send-main:hover,
+      .send-btn.send-main:focus {
+        background: linear-gradient(135deg, #1b8cc7 0%, #229ed9 100%);
+        transform: scale(1.08);
+        box-shadow: 0 4px 16px rgba(34, 158, 217, 0.22);
+        outline: none;
+      }
+      #messagebox {
+        border-radius: 2rem;
+        background: #f7fbff;
+        border: 1px solid #e3f0ff;
+        padding: 0.75rem 1.25rem;
+        font-size: 1.1rem;
+        box-shadow: 0 1px 4px rgba(34, 158, 217, 0.06);
+        margin-right: 0.5rem;
+      }
+      form#chatform {
+        background: rgba(255, 255, 255, 0.85);
+        border-top: 1px solid #e3f0ff;
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        box-shadow: 0 -2px 8px rgba(34, 158, 217, 0.04);
+        backdrop-filter: blur(4px);
+      }
+      .tg-bubble img,
+      .tg-bubble video,
+      .tg-bubble audio {
+        display: block;
+        margin: 0.5rem 0;
+        max-width: 220px;
+        border-radius: 0.75rem;
+        box-shadow: 0 2px 8px rgba(34, 158, 217, 0.1);
+      }
+      .tg-bubble audio {
+        width: 180px;
+        margin: 0.5rem auto;
       }
     </style>
     <link href="/css/style.css" rel="stylesheet" />
@@ -97,53 +203,37 @@
         ></video>
       </div>
       <div id="controls">
-        <div class="control-container" id="cameraButton">
-          <svg
-            width="21"
-            height="14"
-            viewBox="0 0 21 14"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M20.525 2.149C20.365 2.05 20.183 2 20 2C19.847 2 19.694 2.035 19.553 2.105L17 3.382V3C17 1.346 15.654 0 14 0H3C1.346 0 0 1.346 0 3V11C0 12.654 1.346 14 3 14H14C15.654 14 17 12.654 17 11V10.618L19.553 11.894C19.694 11.965 19.847 12 20 12C20.183 12 20.365 11.95 20.525 11.851C20.82 11.668 21 11.347 21 11V3C21 2.653 20.82 2.332 20.525 2.149ZM5 8.5C4.171 8.5 3.5 7.829 3.5 7C3.5 6.171 4.171 5.5 5 5.5C5.829 5.5 6.5 6.171 6.5 7C6.5 7.829 5.829 8.5 5 8.5Z"
-              fill="white"
-            />
-          </svg>
-        </div>
-
-        <div class="control-container" id="hangup">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-            <path d="M0 0h24v24H0z" fill="red" />
-            <path
-              d="M20 15.5c-.78 0-1.55-.3-2.12-.88l-1.43-1.42a4.007 4.007 0 0 0-5.54 0l-1.43 1.42A2.983 2.983 0 0 1 4 15.5c-.78 0-1.55-.3-2.12-.88A2.983 2.983 0 0 1 1 12.5a2.983 2.983 0 0 1 .88-2.12l7-7a4.007 4.007 0 0 1 5.54 0l7 7c.58.58.88 1.34.88 2.12s-.3 1.55-.88 2.12c-.58.58-1.34.88-2.12.88z"
-            />
-          </svg>
-        </div>
-
         <div class="control-container" id="micButton">
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 14 20"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              fill-rule="evenodd"
-              clip-rule="evenodd"
-              d="M7 12.5C8.7 12.5 10 11.2 10 9.5V3.5C10 1.8 8.7 0.5 7 0.5C5.3 0.5 4 1.8 4 3.5V9.5C4 11.2 5.3 12.5 7 12.5ZM12.3 9.5C12.3 12.5 9.8 14.6 7 14.6C4.2 14.6 1.7 12.5 1.7 9.5H0C0 12.9 2.7 15.7 6 16.2V19.5H8V16.2C11.3 15.7 14 12.9 14 9.5H12.3Z"
-              fill="white"
-            />
-          </svg>
+          <img
+            id="micIcon"
+            src="/mic-on.png"
+            alt="Mic"
+            style="width: 30px; height: 30px"
+          />
+        </div>
+        <div class="control-container" id="cameraButton">
+          <img
+            id="videoIcon"
+            src="/video-on.png"
+            alt="Video"
+            style="width: 30px; height: 30px"
+          />
+        </div>
+        <div class="control-container" id="hangup">
+          <img
+            id="hangupIcon"
+            src="/missed-call.png"
+            alt="Hang Up"
+            style="width: 30px; height: 30px"
+          />
         </div>
       </div>
     </div>
     <div
       id="incoming-call"
-      class="fixed  z-[222] w-full h-dvh hidden bg-gray-900 bg-opacity-75 flex  items-center justify-center"
+      class="fixed z-[222] w-full h-dvh hidden bg-gray-900 bg-opacity-75 flex items-center justify-center"
     >
-      <div class="bg-white  p-8 rounded-md text-center">
+      <div class="bg-white p-8 rounded-md text-center">
         <p class="mb-4">Incoming Call...</p>
         <button
           id="accept-call"
@@ -159,28 +249,87 @@
         </button>
       </div>
     </div>
-    <main class="flex-1 p-4 overflow-y-auto relative" id="message-container">
+    <div
+      id="outgoing-call"
+      class="fixed z-[222] w-full h-dvh hidden bg-gray-900 bg-opacity-75 flex items-center justify-center"
+    >
+      <div class="bg-white p-8 rounded-md text-center">
+        <p class="mb-4">Calling...</p>
+        <button
+          id="cancel-call"
+          class="bg-red-500 text-white py-2 px-4 rounded-md"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+    <div
+      id="call-denied"
+      class="fixed z-[222] w-full h-dvh hidden bg-gray-900 bg-opacity-75 flex items-center justify-center"
+    >
+      <div class="bg-white p-8 rounded-md text-center">
+        <p class="mb-4">Video Call Denied</p>
+        <button
+          id="close-denied"
+          class="bg-gray-500 text-white py-2 px-4 rounded-md"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+    <main
+      class="flex-1 p-4 overflow-y-auto relative bg-white"
+      id="message-container"
+      style="background: #fff"
+    >
       <div
         class="text-zinc-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2/3 text-center nobody"
       >
-        Wait Untill Your Partner Connects.
+        Wait Until Your Partner Connects.
       </div>
     </main>
-    <form id="chatform" class="bg-white p-4 flex">
+    <form id="chatform" class="flex items-center gap-2">
       <input type="hidden" id="userid" value="" />
       <input
         type="text"
         id="messagebox"
-        class="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-        placeholder="Type a message"
+        class="flex-1"
+        placeholder="Type a message..."
+        autocomplete="off"
       />
+      <input
+        type="file"
+        id="fileInput"
+        accept="image/*,video/*"
+        style="display: none"
+        multiple
+      />
+      <button type="button" id="fileBtn" class="send-btn" aria-label="Upload">
+        <img src="/upload.png" alt="Upload" style="width: 32px; height: 32px" />
+      </button>
       <button
-        type="submit"
-        class="ml-2 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700"
+        type="button"
+        id="audioBtn"
+        class="send-btn"
+        aria-label="Record Audio"
       >
-        Send
+        <img
+          id="audioIcon"
+          src="/voice.png"
+          alt="audio"
+          style="width: 32px; height: 32px"
+        />
+      </button>
+
+      <button type="button" id="fileBtn" class="send-btn" aria-label="Upload">
+        <img
+          src="/send-message.png"
+          alt="audio"
+          style="width: 32px; height: 32px"
+        />
       </button>
     </form>
+    <audio id="audioPlayer" controls style="display: none"></audio>
     <video id="local-video" class="hidden" autoplay></video>
     <video id="remote-video" class="hidden" autoplay></video>
 
@@ -190,244 +339,557 @@
       crossorigin="anonymous"
     ></script>
 
-  
     <script>
-            const socket = io();
-            const chatform = document.querySelector("#chatform");
-            const messagebox = document.querySelector("#messagebox");
-            const messagecontainer = document.querySelector("#message-container");
+      const socket = io();
+      const chatform = document.querySelector("#chatform");
+      const messagebox = document.querySelector("#messagebox");
+      const messagecontainer = document.querySelector("#message-container");
 
-            let room;
+      let room;
 
-            socket.emit("joinroom");
+      // Utility to enable/disable chat
+      function setChatEnabled(enabled) {
+        document.getElementById("messagebox").disabled = !enabled;
+        // Find all send buttons in the form
+        document
+          .querySelectorAll("#chatform button")
+          .forEach((btn) => (btn.disabled = !enabled));
+        // Also disable/enable the Next button
+        document.getElementById("next-btn").disabled = !enabled;
+      }
 
-            socket.on("joined", function (roomname) {
-                room = roomname;
-                document.querySelector(".nobody").classList.add("hidden");
-            })
+      socket.emit("joinroom");
 
-            socket.on("message", function (message) {
-                receiveMessage(message);
-            })
+      socket.on("joined", function (roomname) {
+        room = roomname;
+        if (room) {
+          document.querySelector(".nobody").classList.add("hidden");
+          setChatEnabled(true);
+        } else {
+          // Not matched, waiting for partner
+          document.querySelector(".nobody").classList.remove("hidden");
+          document.getElementById(
+            "message-container"
+          ).innerHTML = `<div class=\"text-zinc-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2/3 text-center nobody\">Wait Until Your Partner Connects.</div>`;
+          setChatEnabled(false);
+        }
+      });
 
-            chatform.addEventListener("submit", function (event) {
-                event.preventDefault();
-                socket.emit("message", { room: room, message: messagebox.value });
-                attachMessage(messagebox.value);
-                messagebox.value = "";
-            })
+      socket.on("message", function (message) {
+        if (!room) return; // Don't display messages if not in a room
+        receiveMessage(message);
+      });
 
-            function attachMessage(message) {
-                const userMessageContainer = document.createElement('div');
-                userMessageContainer.classList.add('flex', 'my-2', 'justify-end');
+      chatform.addEventListener("submit", function (event) {
+        event.preventDefault();
+        if (!room) {
+          alert(
+            "You are not connected to a partner. Please wait for a new partner."
+          );
+          return;
+        }
+        const msg = messagebox.value.trim();
+        if (!msg) return;
+        socket.emit("message", { room: room, message: msg });
+        attachMessage(msg);
+        messagebox.value = "";
+      });
 
-                const userMessageDiv = document.createElement('div');
-                userMessageDiv.classList.add('bg-blue-500', 'text-white', 'p-3', 'rounded-lg', 'max-w-xs');
+      function attachMessage(message) {
+        const row = document.createElement("div");
+        row.className = "tg-row justify-end";
+        const bubble = document.createElement("div");
+        bubble.className = "tg-bubble sent";
+        bubble.innerHTML = message;
+        row.appendChild(bubble);
+        document.getElementById("message-container").appendChild(row);
+        document.querySelector("#message-container").scrollTop =
+          document.querySelector("#message-container").scrollHeight;
+      }
 
-                const userMessageText = document.createElement('p');
-                userMessageText.textContent = message;
+      function receiveMessage(message) {
+        const row = document.createElement("div");
+        row.className = "tg-row justify-start";
+        const avatar = document.createElement("div");
+        avatar.className = "tg-avatar";
+        avatar.textContent = "S";
+        row.appendChild(avatar);
+        const bubble = document.createElement("div");
+        bubble.className = "tg-bubble received";
+        bubble.innerHTML = message;
+        row.appendChild(bubble);
+        document.getElementById("message-container").appendChild(row);
+        document.querySelector("#message-container").scrollTop =
+          document.querySelector("#message-container").scrollHeight;
+      }
 
-                userMessageDiv.appendChild(userMessageText);
+      // WEBRTC START
+      let localStream;
+      let remoteStream;
+      let peerConnection;
+      let inCall = false;
 
-                userMessageContainer.appendChild(userMessageDiv);
+      const rtcSettings = {
+        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      };
 
-                document.getElementById('message-container').appendChild(userMessageContainer);
+      const initialize = async () => {
+        socket.on("signalingMessage", handleSignalingMessage);
 
-                document.querySelector("#message-container").scrollTop = document.querySelector("#message-container").scrollHeight;
+        try {
+          localStream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: true,
+          });
+          document.querySelector("#localVideo").srcObject = localStream;
+          document.querySelector("#localVideo").style.display = "block";
+
+          initiateOffer();
+
+          inCall = true;
+        } catch (err) {
+          console.log("Rejected by browser" + err);
+        }
+      };
+
+      const initiateOffer = async () => {
+        await createPeerConnection();
+        try {
+          const offer = await peerConnection.createOffer();
+          await peerConnection.setLocalDescription(offer);
+          socket.emit("signalingMessage", {
+            room,
+            message: JSON.stringify({
+              type: "offer",
+              offer,
+            }),
+          });
+        } catch (err) {
+          console.log("error in creating offer" + err);
+        }
+      };
+
+      const createPeerConnection = () => {
+        peerConnection = new RTCPeerConnection(rtcSettings);
+
+        remoteStream = new MediaStream();
+
+        document.querySelector("#remoteVideo").srcObject = remoteStream;
+        document.querySelector("#remoteVideo").style.display = "block";
+        document.querySelector("#localVideo").classList.add("smallFrame");
+
+        localStream.getTracks().forEach((track) => {
+          peerConnection.addTrack(track, localStream);
+        });
+
+        peerConnection.ontrack = (event) => {
+          event.streams[0].getTracks().forEach((track) => {
+            remoteStream.addTrack(track);
+          });
+        };
+
+        peerConnection.onicecandidate = (event) => {
+          if (event.candidate) {
+            console.log("Sending Ice Candidates");
+
+            socket.emit("signalingMessage", {
+              room,
+              message: JSON.stringify({
+                type: "candidate",
+                candidate: event.candidate,
+              }),
+            });
+          }
+        };
+
+        peerConnection.onconnectionstatechange = () => {
+          console.log(
+            "connection state change hui ",
+            peerConnection.connectionState
+          );
+        };
+      };
+
+      const handleSignalingMessage = async (message) => {
+        const { type, offer, answer, candidate } = JSON.parse(message);
+        if (type === "offer") handleOffer(offer);
+        if (type === "answer") handleAnswer(answer);
+        if (type === "candidate" && peerConnection) {
+          try {
+            await peerConnection.addIceCandidate(candidate);
+          } catch (error) {
+            console.log(error);
+          }
+        }
+        if (type === "hangup") {
+          hangup();
+        }
+      };
+
+      const handleOffer = async (offer) => {
+        await createPeerConnection();
+        try {
+          await peerConnection.setRemoteDescription(offer);
+          const answer = await peerConnection.createAnswer();
+          await peerConnection.setLocalDescription(answer);
+          socket.emit("signalingMessage", {
+            room,
+            message: JSON.stringify({ type: "answer", answer }),
+          });
+          inCall = true;
+        } catch (error) {
+          console.log("failed to handle offer");
+        }
+      };
+
+      const handleAnswer = async (answer) => {
+        try {
+          await peerConnection.setRemoteDescription(answer);
+        } catch (error) {
+          console.log("failed to handle answer");
+        }
+      };
+
+      document
+        .querySelector("#video-call-btn")
+        .addEventListener("click", function () {
+          document.querySelector("#outgoing-call").classList.remove("hidden");
+          socket.emit("startVideoCall", { room });
+        });
+
+      document.getElementById("cancel-call").onclick = function () {
+        document.querySelector("#outgoing-call").classList.add("hidden");
+        socket.emit("cancelCall", { room });
+      };
+
+      socket.on("incomingCall", function () {
+        document.querySelector("#outgoing-call").classList.add("hidden");
+        document.querySelector("#incoming-call").classList.remove("hidden");
+      });
+
+      socket.on("callAccepted", function () {
+        document.querySelector("#outgoing-call").classList.add("hidden");
+        initialize();
+        document.querySelector(".videoblock").classList.remove("hidden");
+      });
+
+      document
+        .querySelector("#accept-call")
+        .addEventListener("click", function () {
+          document.querySelector("#incoming-call").classList.add("hidden");
+          initialize();
+          document.querySelector(".videoblock").classList.remove("hidden");
+          socket.emit("acceptCall", { room });
+        });
+
+      document
+        .querySelector("#reject-call")
+        .addEventListener("click", function () {
+          document.querySelector("#incoming-call").classList.add("hidden");
+          socket.emit("rejectCall", { room });
+        });
+
+      socket.on("callRejected", function () {
+        document.querySelector("#outgoing-call").classList.add("hidden");
+        document.querySelector("#call-denied").classList.remove("hidden");
+      });
+
+      document.getElementById("close-denied").onclick = function () {
+        document.querySelector("#call-denied").classList.add("hidden");
+      };
+
+      document.querySelector("#hangup").addEventListener("click", function () {
+        hangup();
+      });
+
+      function hangup() {
+        if (peerConnection) {
+          peerConnection.close();
+          peerConnection = null;
+          localStream.getTracks().forEach((track) => track.stop());
+
+          document.querySelector(".videoblock").classList.add("hidden");
+          socket.emit("signalingMessage", {
+            room,
+            message: JSON.stringify({ type: "hangup" }),
+          });
+          inCall = false;
+        }
+      }
+
+      // File sending
+      document.getElementById("fileBtn").onclick = () =>
+        document.getElementById("fileInput").click();
+      document.getElementById("fileInput").onchange = function (e) {
+        const files = e.target.files;
+        for (let file of files) {
+          const reader = new FileReader();
+          reader.onload = function (evt) {
+            if (file.type.startsWith("image/")) {
+              socket.emit("message", {
+                room,
+                message: `<img src='${evt.target.result}' alt='Image' />`,
+              });
+              attachMessage(`<img src='${evt.target.result}' alt='Image' />`);
+            } else if (file.type.startsWith("video/")) {
+              socket.emit("message", {
+                room,
+                message: `<video src='${evt.target.result}' controls />`,
+              });
+              attachMessage(`<video src='${evt.target.result}' controls />`);
             }
+          };
+          reader.readAsDataURL(file);
+        }
+        e.target.value = "";
+      };
 
-            function receiveMessage(message) {
-                const messageContainer = document.createElement('div');
-                messageContainer.classList.add('flex', 'my-2', 'justify-start');
-
-                const messageDiv = document.createElement('div');
-                messageDiv.classList.add('bg-gray-300', 'text-gray-800', 'p-3', 'rounded-lg', 'max-w-xs');
-
-                const messageText = document.createElement('p');
-                messageText.textContent = message;
-
-                messageDiv.appendChild(messageText);
-
-                messageContainer.appendChild(messageDiv);
-
-                document.getElementById('message-container').appendChild(messageContainer);
-                document.querySelector("#message-container").scrollTop = document.querySelector("#message-container").scrollHeight;
-            }
-
-            // WEBRTC START
-            let localStream;
-            let remoteStream;
-            let peerConnection;
-            let inCall = false;
-
-            const rtcSettings = {
-                iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+      // Audio recording
+      let mediaRecorder,
+        audioChunks = [];
+      document.getElementById("audioBtn").onclick = async function () {
+        if (!mediaRecorder || mediaRecorder.state === "inactive") {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          });
+          mediaRecorder = new MediaRecorder(stream);
+          mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+          mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+            const reader = new FileReader();
+            reader.onloadend = function () {
+              const base64data = reader.result;
+              socket.emit("message", {
+                room,
+                message: `<audio src='${base64data}' controls />`,
+              });
+              attachMessage(`<audio src='${base64data}' controls />`);
+              audioChunks = [];
+              document.getElementById("audioIcon").src = "/voice.png";
             };
+            reader.readAsDataURL(audioBlob);
+          };
+          mediaRecorder.start();
+          // Change icon to recording
+          document.getElementById("audioIcon").src = "/wave.png";
+          setTimeout(() => {
+            if (mediaRecorder && mediaRecorder.state === "recording")
+              mediaRecorder.stop();
+          }, 5000);
+        }
+      };
 
-            const initialize = async () => {
-                socket.on("signalingMessage", handleSignalingMessage);
+      // Mic and video toggle logic
+      let micOn = true,
+        videoOn = true;
+      document.getElementById("micButton").onclick = function () {
+        micOn = !micOn;
+        if (localStream)
+          localStream
+            .getAudioTracks()
+            .forEach((track) => (track.enabled = micOn));
+        document.getElementById("micIcon").src = micOn
+          ? "/mic-on.png"
+          : "/mic-off.png";
+      };
+      document.getElementById("cameraButton").onclick = function () {
+        videoOn = !videoOn;
+        if (localStream)
+          localStream
+            .getVideoTracks()
+            .forEach((track) => (track.enabled = videoOn));
+        document.getElementById("videoIcon").src = videoOn
+          ? "/video-on.png"
+          : "/video-off.png";
+      };
 
-                try {
-                    localStream = await navigator.mediaDevices.getUserMedia({
-                        audio: true,
-                        video: true
-                    })
-                    document.querySelector("#localVideo").srcObject = localStream;
-                    document.querySelector("#localVideo").style.display = "block";
+      // VOICE CALL FUNCTIONALITY
+      let voiceCallActive = false;
+      let voicePeerConnection;
+      let voiceLocalStream;
+      let voiceRemoteStream;
 
-                    initiateOffer();
+      document
+        .querySelector("#voice-call-btn")
+        .addEventListener("click", function () {
+          console.log("[VoiceCall] Emitting startVoiceCall with room:", room);
+          document.querySelector("#outgoing-call").classList.remove("hidden");
+          socket.emit("startVoiceCall", { room });
+        });
 
-                    inCall = true;
-                }
-                catch (err) {
-                    console.log("Rejected by browser" + err);
-                }
+      socket.on("incomingVoiceCall", function () {
+        console.log("[VoiceCall] incomingVoiceCall event received");
+        document.querySelector("#outgoing-call").classList.add("hidden");
+        document.querySelector("#incoming-call").classList.remove("hidden");
+        // Mark as voice call
+        document.querySelector("#incoming-call p").textContent =
+          "Incoming Voice Call...";
+      });
+
+      socket.on("voiceCallAccepted", function () {
+        document.querySelector("#outgoing-call").classList.add("hidden");
+        startVoiceCall(true);
+      });
+
+      document
+        .querySelector("#accept-call")
+        .addEventListener("click", function () {
+          if (
+            document
+              .querySelector("#incoming-call p")
+              .textContent.includes("Voice")
+          ) {
+            document.querySelector("#incoming-call").classList.add("hidden");
+            startVoiceCall(false);
+            socket.emit("acceptVoiceCall", { room });
+          }
+        });
+
+      document
+        .querySelector("#reject-call")
+        .addEventListener("click", function () {
+          if (
+            document
+              .querySelector("#incoming-call p")
+              .textContent.includes("Voice")
+          ) {
+            document.querySelector("#incoming-call").classList.add("hidden");
+            socket.emit("rejectVoiceCall", { room });
+          }
+        });
+
+      socket.on("voiceCallRejected", function () {
+        document.querySelector("#outgoing-call").classList.add("hidden");
+        document.querySelector("#call-denied").classList.remove("hidden");
+        document.querySelector("#call-denied p").textContent =
+          "Voice Call Denied";
+      });
+
+      document.getElementById("cancel-call").onclick = function () {
+        if (!voiceCallActive) {
+          document.querySelector("#outgoing-call").classList.add("hidden");
+          socket.emit("cancelVoiceCall", { room });
+        }
+      };
+
+      function startVoiceCall(isCaller) {
+        voiceCallActive = true;
+        // Hide video UI if visible
+        document.querySelector(".videoblock").classList.add("hidden");
+        // Setup audio elements
+        let audioElem = document.getElementById("audioPlayer");
+        audioElem.style.display = "block";
+        audioElem.srcObject = null;
+        // Setup WebRTC for audio only
+        const rtcSettings = {
+          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+        };
+        voicePeerConnection = new RTCPeerConnection(rtcSettings);
+        voiceRemoteStream = new MediaStream();
+        audioElem.srcObject = voiceRemoteStream;
+        voicePeerConnection.ontrack = (event) => {
+          event.streams[0].getTracks().forEach((track) => {
+            voiceRemoteStream.addTrack(track);
+          });
+        };
+        voicePeerConnection.onicecandidate = (event) => {
+          if (event.candidate) {
+            socket.emit("voiceSignalingMessage", {
+              room,
+              message: JSON.stringify({
+                type: "candidate",
+                candidate: event.candidate,
+              }),
+            });
+          }
+        };
+        navigator.mediaDevices
+          .getUserMedia({ audio: true, video: false })
+          .then((stream) => {
+            voiceLocalStream = stream;
+            stream.getTracks().forEach((track) => {
+              voicePeerConnection.addTrack(track, stream);
+            });
+            if (isCaller) {
+              voicePeerConnection.createOffer().then((offer) => {
+                voicePeerConnection.setLocalDescription(offer);
+                socket.emit("voiceSignalingMessage", {
+                  room,
+                  message: JSON.stringify({ type: "offer", offer }),
+                });
+              });
             }
+          });
+      }
 
-            const initiateOffer = async () => {
-                await createPeerConnection();
-                try {
-                    const offer = await peerConnection.createOffer();
-                    await peerConnection.setLocalDescription(offer);
-                    socket.emit("signalingMessage", {
-                        room,
-                        message: JSON.stringify({
-                            type: "offer",
-                            offer
-                        })
-                    })
-                }
-                catch (err) {
-                    console.log("error in creating offer" + err);
-                }
-            }
+      socket.on("voiceSignalingMessage", async function (message) {
+        const { type, offer, answer, candidate } = JSON.parse(message);
+        if (type === "offer") {
+          if (!voicePeerConnection) startVoiceCall(false);
+          await voicePeerConnection.setRemoteDescription(offer);
+          const answerObj = await voicePeerConnection.createAnswer();
+          await voicePeerConnection.setLocalDescription(answerObj);
+          socket.emit("voiceSignalingMessage", {
+            room,
+            message: JSON.stringify({ type: "answer", answer: answerObj }),
+          });
+        }
+        if (type === "answer") {
+          await voicePeerConnection.setRemoteDescription(answer);
+        }
+        if (type === "candidate" && voicePeerConnection) {
+          try {
+            await voicePeerConnection.addIceCandidate(candidate);
+          } catch (error) {
+            console.log(error);
+          }
+        }
+        if (type === "hangup") {
+          endVoiceCall();
+        }
+      });
 
-            const createPeerConnection = () => {
-                peerConnection = new RTCPeerConnection(rtcSettings);
+      function endVoiceCall() {
+        if (voicePeerConnection) {
+          voicePeerConnection.close();
+          voicePeerConnection = null;
+        }
+        if (voiceLocalStream) {
+          voiceLocalStream.getTracks().forEach((track) => track.stop());
+        }
+        document.getElementById("audioPlayer").style.display = "none";
+        voiceCallActive = false;
+      }
 
-                remoteStream = new MediaStream();
+      // --- Notify on disconnect/leave and Next button logic ---
+      document
+        .getElementById("next-btn")
+        .addEventListener("click", function () {
+          socket.emit("next");
+          // Optionally, reset UI for waiting state
+          document.querySelector(".nobody").classList.remove("hidden");
+          document.getElementById(
+            "message-container"
+          ).innerHTML = `<div class="text-zinc-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2/3 text-center nobody">Wait Until Your Partner Connects.</div>`;
+          // Hide call popups/audio/video
+          document.querySelector(".videoblock").classList.add("hidden");
+          document.getElementById("audioPlayer").style.display = "none";
+        });
 
-                document.querySelector("#remoteVideo").srcObject = remoteStream;
-                document.querySelector("#remoteVideo").style.display = "block";
-                document.querySelector("#localVideo").classList.add("smallFrame");
+      socket.on("partnerDisconnected", function () {
+        alert("Your partner has left or disconnected.");
+        document.querySelector(".nobody").classList.remove("hidden");
+        document.getElementById(
+          "message-container"
+        ).innerHTML = `<div class=\"text-zinc-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2/3 text-center nobody\">Wait Until Your Partner Connects.</div>`;
+        document.querySelector(".videoblock").classList.add("hidden");
+        document.getElementById("audioPlayer").style.display = "none";
+        room = null;
+        setChatEnabled(false);
+      });
 
-                localStream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, localStream);
-                })
-
-                peerConnection.ontrack = (event) => {
-                    event.streams[0].getTracks().forEach(track => {
-                        remoteStream.addTrack(track);
-                    })
-                }
-
-                peerConnection.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        console.log("Sending Ice Candidates");
-
-                        socket.emit("signalingMessage", {
-                            room,
-                            message: JSON.stringify({
-                                type: "candidate",
-                                candidate: event.candidate
-                            })
-                        })
-                    }
-                }
-
-                peerConnection.onconnectionstatechange = () => {
-                    console.log("connection state change hui ", peerConnection.connectionState);
-                }
-            }
-
-            const handleSignalingMessage = async (message) => {
-                const { type, offer, answer, candidate } = JSON.parse(message);
-                if (type === "offer") handleOffer(offer);
-                if (type === "answer") handleAnswer(answer);
-                if (type === "candidate" && peerConnection) {
-                    try { await peerConnection.addIceCandidate(candidate); }
-                    catch (error) {
-                        console.log(error);
-                    }
-                }
-                if (type === "hangup") {
-                    hangup()
-                }
-            }
-
-            const handleOffer = async (offer) => {
-                await createPeerConnection();
-                try {
-                    await peerConnection.setRemoteDescription(offer);
-                    const answer = await peerConnection.createAnswer();
-                    await peerConnection.setLocalDescription(answer);
-                    socket.emit("signalingMessage", { room, message: JSON.stringify({ type: "answer", answer }) });
-                    inCall = true;
-                }
-                catch (error) {
-                    console.log("failed to handle offer");
-                }
-            }
-
-            const handleAnswer = async (answer) => {
-                try {
-                    await peerConnection.setRemoteDescription(answer);
-                }
-                catch (error) {
-                    console.log("failed to handle answer");
-                }
-            }
-
-
-            document.querySelector("#video-call-btn")
-                .addEventListener("click", function () {
-                    socket.emit("startVideoCall", { room })
-                })
-
-            socket.on("incomingCall", function () {
-                console.log("hey");
-                document.querySelector("#incoming-call").classList.remove("hidden");
-            })
-
-            socket.on("callAccepted", function () {
-                initialize();
-                document.querySelector(".videoblock").classList.remove("hidden");
-            })
-
-            document.querySelector("#accept-call")
-                .addEventListener("click", function () {
-                    document.querySelector("#incoming-call").classList.add("hidden");
-                    initialize();
-                    document.querySelector(".videoblock").classList.remove("hidden");
-                    socket.emit("acceptCall", { room })
-                })
-
-            document.querySelector("#reject-call")
-                .addEventListener("click", function () {
-                    document.querySelector("#incoming-call").classList.add("hidden");
-                    socket.emit("rejectCall", { room })
-                })
-
-            socket.on("callRejected", function () {
-                alert("Call rejected by other user");
-            })
-
-            document.querySelector("#hangup")
-                .addEventListener("click", function () {
-                    hangup();
-                })
-
-            function hangup() {
-                if (peerConnection) {
-                    peerConnection.close();
-                    peerConnection = null;
-                    localStream.getTracks().forEach(track => track.stop());
-
-                    document.querySelector(".videoblock").classList.add("hidden");
-                    socket.emit("signalingMessage", { room, message: JSON.stringify({ type: "hangup" }) });
-                    inCall = false;
-                }
-            }
-        </script>
+      // On page load, disable chat and Next until matched
+      setChatEnabled(false);
+    </script>
   </body>
 </html>
