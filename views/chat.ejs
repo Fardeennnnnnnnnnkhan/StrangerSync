@@ -352,6 +352,10 @@
         const sendBtn = document.getElementById("send-btn");
         const nextBtn = document.getElementById("next-btn");
         const leaveBtn = document.getElementById("leave-btn");
+        const videoCallBtn = document.getElementById("video-call-btn");
+        const audioBtn = document.getElementById("audioBtn");
+        const fileBtn = document.getElementById("fileBtn");
+        const fileInput = document.getElementById("fileInput");
 
         let room;
         let localStream;
@@ -363,12 +367,16 @@
         let voiceLocalStream;
         let voiceRemoteStream;
 
-        // Utility to enable/disable chat
+        // Utility to enable/disable chat and all controls
         function setChatEnabled(enabled) {
           if (messagebox) messagebox.disabled = !enabled;
           if (sendBtn) sendBtn.disabled = !enabled;
           if (nextBtn) nextBtn.disabled = !enabled;
           if (leaveBtn) leaveBtn.disabled = !enabled;
+          if (videoCallBtn) videoCallBtn.disabled = !enabled;
+          if (audioBtn) audioBtn.disabled = !enabled;
+          if (fileBtn) fileBtn.disabled = !enabled;
+          if (fileInput) fileInput.disabled = !enabled;
         }
 
         socket.emit("joinroom");
@@ -561,6 +569,12 @@
         document
           .querySelector("#video-call-btn")
           .addEventListener("click", function () {
+            if (!room) {
+              alert(
+                "You are not connected to a partner. Please wait for a new partner."
+              );
+              return;
+            }
             document.querySelector("#outgoing-call").classList.remove("hidden");
             socket.emit("startVideoCall", { room });
           });
@@ -628,71 +642,97 @@
         }
 
         // File sending
-        document.getElementById("fileBtn").onclick = () =>
-          document.getElementById("fileInput").click();
-        document.getElementById("fileInput").onchange = function (e) {
-          const files = e.target.files;
-          for (let file of files) {
-            const reader = new FileReader();
-            reader.onload = function (evt) {
-              if (file.type.startsWith("image/")) {
-                socket.emit("message", {
-                  room,
-                  message: `<img src='${evt.target.result}' alt='Image' />`,
-                });
-                attachMessage(`<img src='${evt.target.result}' alt='Image' />`);
-              } else if (file.type.startsWith("video/")) {
-                socket.emit("message", {
-                  room,
-                  message: `<video src='${evt.target.result}' controls />`,
-                });
-                attachMessage(`<video src='${evt.target.result}' controls />`);
-              }
-            };
-            reader.readAsDataURL(file);
-          }
-          e.target.value = "";
-        };
+        if (fileBtn)
+          fileBtn.onclick = () => {
+            if (!room) {
+              alert(
+                "You are not connected to a partner. Please wait for a new partner."
+              );
+              return;
+            }
+            if (fileInput) fileInput.click();
+          };
+        if (fileInput)
+          fileInput.onchange = function (e) {
+            if (!room) {
+              alert(
+                "You are not connected to a partner. Please wait for a new partner."
+              );
+              return;
+            }
+            const files = e.target.files;
+            for (let file of files) {
+              const reader = new FileReader();
+              reader.onload = function (evt) {
+                if (file.type.startsWith("image/")) {
+                  socket.emit("message", {
+                    room,
+                    message: `<img src='${evt.target.result}' alt='Image' />`,
+                  });
+                  attachMessage(
+                    `<img src='${evt.target.result}' alt='Image' />`
+                  );
+                } else if (file.type.startsWith("video/")) {
+                  socket.emit("message", {
+                    room,
+                    message: `<video src='${evt.target.result}' controls />`,
+                  });
+                  attachMessage(
+                    `<video src='${evt.target.result}' controls />`
+                  );
+                }
+              };
+              reader.readAsDataURL(file);
+            }
+            e.target.value = "";
+          };
 
         // Audio recording
         let mediaRecorder,
           audioChunks = [];
-        document.getElementById("audioBtn").onclick = async function () {
-          if (!mediaRecorder || mediaRecorder.state === "inactive") {
-            const stream = await navigator.mediaDevices.getUserMedia({
-              audio: true,
-            });
-            mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-            mediaRecorder.onstop = () => {
-              const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-              const reader = new FileReader();
-              reader.onloadend = function () {
-                const base64data = reader.result;
-                socket.emit("message", {
-                  room,
-                  message: `<audio src='${base64data}' controls />`,
-                });
-                attachMessage(`<audio src='${base64data}' controls />`);
-                audioChunks = [];
-                document.getElementById("audioIcon").src = "/voice.png";
+        if (audioBtn)
+          audioBtn.onclick = async function () {
+            if (!room) {
+              alert(
+                "You are not connected to a partner. Please wait for a new partner."
+              );
+              return;
+            }
+            if (!mediaRecorder || mediaRecorder.state === "inactive") {
+              const stream = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+              });
+              mediaRecorder = new MediaRecorder(stream);
+              mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+              mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+                const reader = new FileReader();
+                reader.onloadend = function () {
+                  const base64data = reader.result;
+                  socket.emit("message", {
+                    room,
+                    message: `<audio src='${base64data}' controls />`,
+                  });
+                  attachMessage(`<audio src='${base64data}' controls />`);
+                  audioChunks = [];
+                  document.getElementById("audioIcon").src = "/voice.png";
+                };
+                reader.readAsDataURL(audioBlob);
               };
-              reader.readAsDataURL(audioBlob);
-            };
-            mediaRecorder.start();
-            // Change icon to recording
-            document.getElementById("audioIcon").src = "/wave.png";
-            setTimeout(() => {
-              if (mediaRecorder && mediaRecorder.state === "recording")
-                mediaRecorder.stop();
-            }, 5000);
-          }
-        };
+              mediaRecorder.start();
+              // Change icon to recording
+              document.getElementById("audioIcon").src = "/wave.png";
+              setTimeout(() => {
+                if (mediaRecorder && mediaRecorder.state === "recording")
+                  mediaRecorder.stop();
+              }, 5000);
+            }
+          };
 
         // Mic and video toggle logic
         let micOn = true,
           videoOn = true;
-        document.getElementById("micButton").onclick = function () {
+        document.getElementById("mic").onclick = function () {
           micOn = !micOn;
           if (localStream)
             localStream
@@ -901,7 +941,7 @@
           }, 2000);
         });
 
-        // On page load, disable chat and Next until matched
+        // On page load, disable chat and all controls until matched
         setChatEnabled(false);
 
         socket.on("disconnect", function () {
