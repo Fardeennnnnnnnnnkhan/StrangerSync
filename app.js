@@ -114,6 +114,10 @@ io.on("connection", function (socket) {
     let idx = waitingusers.indexOf(socket);
     if (idx !== -1) waitingusers.splice(idx, 1);
   });
+
+  socket.on("leave", function () {
+    notifyAndLeave(socket);
+  });
 });
 
 app.set("view engine", "ejs");

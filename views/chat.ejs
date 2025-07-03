@@ -127,8 +127,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 2px 8px rgba(34, 158, 217, 0.15);
-        color: #229ed9;
+        /* box-shadow: 0 2px 8px rgba(34, 158, 217, 0.15); */
+        /* color: #229ed9; */
         font-size: 1.5rem;
         margin-left: 0.5rem;
         transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
@@ -136,12 +136,12 @@
         background: transparent;
       }
       .send-btn.send-main {
-        background: linear-gradient(135deg, #229ed9 0%, #48c6ef 100%);
+        /* background: linear-gradient(135deg, #229ed9 0%, #48c6ef 100%); */
         color: #fff;
       }
       .send-btn.send-main:hover,
       .send-btn.send-main:focus {
-        background: linear-gradient(135deg, #1b8cc7 0%, #229ed9 100%);
+        /* background: linear-gradient(135deg, #1b8cc7 0%, #229ed9 100%); */
         transform: scale(1.08);
         box-shadow: 0 4px 16px rgba(34, 158, 217, 0.22);
         outline: none;
@@ -203,7 +203,7 @@
         ></video>
       </div>
       <div id="controls">
-        <div class="control-container" id="micButton">
+        <div class="control-container" id="mic">
           <img
             id="micIcon"
             src="/mic-on.png"
@@ -320,11 +320,15 @@
           style="width: 32px; height: 32px"
         />
       </button>
-
-      <button type="button" id="fileBtn" class="send-btn" aria-label="Upload">
+      <button
+        type="submit"
+        id="send-btn"
+        class="send-btn send-main"
+        aria-label="Send"
+      >
         <img
           src="/send-message.png"
-          alt="audio"
+          alt="send"
           style="width: 32px; height: 32px"
         />
       </button>
@@ -340,556 +344,593 @@
     ></script>
 
     <script>
-      const socket = io();
-      const chatform = document.querySelector("#chatform");
-      const messagebox = document.querySelector("#messagebox");
-      const messagecontainer = document.querySelector("#message-container");
+      document.addEventListener("DOMContentLoaded", function () {
+        const socket = io();
+        const chatform = document.querySelector("#chatform");
+        const messagebox = document.querySelector("#messagebox");
+        const messagecontainer = document.querySelector("#message-container");
+        const sendBtn = document.getElementById("send-btn");
+        const nextBtn = document.getElementById("next-btn");
+        const leaveBtn = document.getElementById("leave-btn");
 
-      let room;
+        let room;
+        let localStream;
+        let remoteStream;
+        let peerConnection;
+        let inCall = false;
+        let voiceCallActive = false;
+        let voicePeerConnection;
+        let voiceLocalStream;
+        let voiceRemoteStream;
 
-      // Utility to enable/disable chat
-      function setChatEnabled(enabled) {
-        document.getElementById("messagebox").disabled = !enabled;
-        // Find all send buttons in the form
-        document
-          .querySelectorAll("#chatform button")
-          .forEach((btn) => (btn.disabled = !enabled));
-        // Also disable/enable the Next button
-        document.getElementById("next-btn").disabled = !enabled;
-      }
-
-      socket.emit("joinroom");
-
-      socket.on("joined", function (roomname) {
-        room = roomname;
-        if (room) {
-          document.querySelector(".nobody").classList.add("hidden");
-          setChatEnabled(true);
-        } else {
-          // Not matched, waiting for partner
-          document.querySelector(".nobody").classList.remove("hidden");
-          document.getElementById(
-            "message-container"
-          ).innerHTML = `<div class=\"text-zinc-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2/3 text-center nobody\">Wait Until Your Partner Connects.</div>`;
-          setChatEnabled(false);
+        // Utility to enable/disable chat
+        function setChatEnabled(enabled) {
+          if (messagebox) messagebox.disabled = !enabled;
+          if (sendBtn) sendBtn.disabled = !enabled;
+          if (nextBtn) nextBtn.disabled = !enabled;
+          if (leaveBtn) leaveBtn.disabled = !enabled;
         }
-      });
 
-      socket.on("message", function (message) {
-        if (!room) return; // Don't display messages if not in a room
-        receiveMessage(message);
-      });
+        socket.emit("joinroom");
 
-      chatform.addEventListener("submit", function (event) {
-        event.preventDefault();
-        if (!room) {
-          alert(
-            "You are not connected to a partner. Please wait for a new partner."
-          );
-          return;
-        }
-        const msg = messagebox.value.trim();
-        if (!msg) return;
-        socket.emit("message", { room: room, message: msg });
-        attachMessage(msg);
-        messagebox.value = "";
-      });
-
-      function attachMessage(message) {
-        const row = document.createElement("div");
-        row.className = "tg-row justify-end";
-        const bubble = document.createElement("div");
-        bubble.className = "tg-bubble sent";
-        bubble.innerHTML = message;
-        row.appendChild(bubble);
-        document.getElementById("message-container").appendChild(row);
-        document.querySelector("#message-container").scrollTop =
-          document.querySelector("#message-container").scrollHeight;
-      }
-
-      function receiveMessage(message) {
-        const row = document.createElement("div");
-        row.className = "tg-row justify-start";
-        const avatar = document.createElement("div");
-        avatar.className = "tg-avatar";
-        avatar.textContent = "S";
-        row.appendChild(avatar);
-        const bubble = document.createElement("div");
-        bubble.className = "tg-bubble received";
-        bubble.innerHTML = message;
-        row.appendChild(bubble);
-        document.getElementById("message-container").appendChild(row);
-        document.querySelector("#message-container").scrollTop =
-          document.querySelector("#message-container").scrollHeight;
-      }
-
-      // WEBRTC START
-      let localStream;
-      let remoteStream;
-      let peerConnection;
-      let inCall = false;
-
-      const rtcSettings = {
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-      };
-
-      const initialize = async () => {
-        socket.on("signalingMessage", handleSignalingMessage);
-
-        try {
-          localStream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-            video: true,
-          });
-          document.querySelector("#localVideo").srcObject = localStream;
-          document.querySelector("#localVideo").style.display = "block";
-
-          initiateOffer();
-
-          inCall = true;
-        } catch (err) {
-          console.log("Rejected by browser" + err);
-        }
-      };
-
-      const initiateOffer = async () => {
-        await createPeerConnection();
-        try {
-          const offer = await peerConnection.createOffer();
-          await peerConnection.setLocalDescription(offer);
-          socket.emit("signalingMessage", {
-            room,
-            message: JSON.stringify({
-              type: "offer",
-              offer,
-            }),
-          });
-        } catch (err) {
-          console.log("error in creating offer" + err);
-        }
-      };
-
-      const createPeerConnection = () => {
-        peerConnection = new RTCPeerConnection(rtcSettings);
-
-        remoteStream = new MediaStream();
-
-        document.querySelector("#remoteVideo").srcObject = remoteStream;
-        document.querySelector("#remoteVideo").style.display = "block";
-        document.querySelector("#localVideo").classList.add("smallFrame");
-
-        localStream.getTracks().forEach((track) => {
-          peerConnection.addTrack(track, localStream);
-        });
-
-        peerConnection.ontrack = (event) => {
-          event.streams[0].getTracks().forEach((track) => {
-            remoteStream.addTrack(track);
-          });
-        };
-
-        peerConnection.onicecandidate = (event) => {
-          if (event.candidate) {
-            console.log("Sending Ice Candidates");
-
-            socket.emit("signalingMessage", {
-              room,
-              message: JSON.stringify({
-                type: "candidate",
-                candidate: event.candidate,
-              }),
-            });
-          }
-        };
-
-        peerConnection.onconnectionstatechange = () => {
-          console.log(
-            "connection state change hui ",
-            peerConnection.connectionState
-          );
-        };
-      };
-
-      const handleSignalingMessage = async (message) => {
-        const { type, offer, answer, candidate } = JSON.parse(message);
-        if (type === "offer") handleOffer(offer);
-        if (type === "answer") handleAnswer(answer);
-        if (type === "candidate" && peerConnection) {
-          try {
-            await peerConnection.addIceCandidate(candidate);
-          } catch (error) {
-            console.log(error);
-          }
-        }
-        if (type === "hangup") {
-          hangup();
-        }
-      };
-
-      const handleOffer = async (offer) => {
-        await createPeerConnection();
-        try {
-          await peerConnection.setRemoteDescription(offer);
-          const answer = await peerConnection.createAnswer();
-          await peerConnection.setLocalDescription(answer);
-          socket.emit("signalingMessage", {
-            room,
-            message: JSON.stringify({ type: "answer", answer }),
-          });
-          inCall = true;
-        } catch (error) {
-          console.log("failed to handle offer");
-        }
-      };
-
-      const handleAnswer = async (answer) => {
-        try {
-          await peerConnection.setRemoteDescription(answer);
-        } catch (error) {
-          console.log("failed to handle answer");
-        }
-      };
-
-      document
-        .querySelector("#video-call-btn")
-        .addEventListener("click", function () {
-          document.querySelector("#outgoing-call").classList.remove("hidden");
-          socket.emit("startVideoCall", { room });
-        });
-
-      document.getElementById("cancel-call").onclick = function () {
-        document.querySelector("#outgoing-call").classList.add("hidden");
-        socket.emit("cancelCall", { room });
-      };
-
-      socket.on("incomingCall", function () {
-        document.querySelector("#outgoing-call").classList.add("hidden");
-        document.querySelector("#incoming-call").classList.remove("hidden");
-      });
-
-      socket.on("callAccepted", function () {
-        document.querySelector("#outgoing-call").classList.add("hidden");
-        initialize();
-        document.querySelector(".videoblock").classList.remove("hidden");
-      });
-
-      document
-        .querySelector("#accept-call")
-        .addEventListener("click", function () {
-          document.querySelector("#incoming-call").classList.add("hidden");
-          initialize();
-          document.querySelector(".videoblock").classList.remove("hidden");
-          socket.emit("acceptCall", { room });
-        });
-
-      document
-        .querySelector("#reject-call")
-        .addEventListener("click", function () {
-          document.querySelector("#incoming-call").classList.add("hidden");
-          socket.emit("rejectCall", { room });
-        });
-
-      socket.on("callRejected", function () {
-        document.querySelector("#outgoing-call").classList.add("hidden");
-        document.querySelector("#call-denied").classList.remove("hidden");
-      });
-
-      document.getElementById("close-denied").onclick = function () {
-        document.querySelector("#call-denied").classList.add("hidden");
-      };
-
-      document.querySelector("#hangup").addEventListener("click", function () {
-        hangup();
-      });
-
-      function hangup() {
-        if (peerConnection) {
-          peerConnection.close();
-          peerConnection = null;
-          localStream.getTracks().forEach((track) => track.stop());
-
-          document.querySelector(".videoblock").classList.add("hidden");
-          socket.emit("signalingMessage", {
-            room,
-            message: JSON.stringify({ type: "hangup" }),
-          });
-          inCall = false;
-        }
-      }
-
-      // File sending
-      document.getElementById("fileBtn").onclick = () =>
-        document.getElementById("fileInput").click();
-      document.getElementById("fileInput").onchange = function (e) {
-        const files = e.target.files;
-        for (let file of files) {
-          const reader = new FileReader();
-          reader.onload = function (evt) {
-            if (file.type.startsWith("image/")) {
-              socket.emit("message", {
-                room,
-                message: `<img src='${evt.target.result}' alt='Image' />`,
-              });
-              attachMessage(`<img src='${evt.target.result}' alt='Image' />`);
-            } else if (file.type.startsWith("video/")) {
-              socket.emit("message", {
-                room,
-                message: `<video src='${evt.target.result}' controls />`,
-              });
-              attachMessage(`<video src='${evt.target.result}' controls />`);
-            }
-          };
-          reader.readAsDataURL(file);
-        }
-        e.target.value = "";
-      };
-
-      // Audio recording
-      let mediaRecorder,
-        audioChunks = [];
-      document.getElementById("audioBtn").onclick = async function () {
-        if (!mediaRecorder || mediaRecorder.state === "inactive") {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-          });
-          mediaRecorder = new MediaRecorder(stream);
-          mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-          mediaRecorder.onstop = () => {
-            const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-            const reader = new FileReader();
-            reader.onloadend = function () {
-              const base64data = reader.result;
-              socket.emit("message", {
-                room,
-                message: `<audio src='${base64data}' controls />`,
-              });
-              attachMessage(`<audio src='${base64data}' controls />`);
-              audioChunks = [];
-              document.getElementById("audioIcon").src = "/voice.png";
-            };
-            reader.readAsDataURL(audioBlob);
-          };
-          mediaRecorder.start();
-          // Change icon to recording
-          document.getElementById("audioIcon").src = "/wave.png";
-          setTimeout(() => {
-            if (mediaRecorder && mediaRecorder.state === "recording")
-              mediaRecorder.stop();
-          }, 5000);
-        }
-      };
-
-      // Mic and video toggle logic
-      let micOn = true,
-        videoOn = true;
-      document.getElementById("micButton").onclick = function () {
-        micOn = !micOn;
-        if (localStream)
-          localStream
-            .getAudioTracks()
-            .forEach((track) => (track.enabled = micOn));
-        document.getElementById("micIcon").src = micOn
-          ? "/mic-on.png"
-          : "/mic-off.png";
-      };
-      document.getElementById("cameraButton").onclick = function () {
-        videoOn = !videoOn;
-        if (localStream)
-          localStream
-            .getVideoTracks()
-            .forEach((track) => (track.enabled = videoOn));
-        document.getElementById("videoIcon").src = videoOn
-          ? "/video-on.png"
-          : "/video-off.png";
-      };
-
-      // VOICE CALL FUNCTIONALITY
-      let voiceCallActive = false;
-      let voicePeerConnection;
-      let voiceLocalStream;
-      let voiceRemoteStream;
-
-      document
-        .querySelector("#voice-call-btn")
-        .addEventListener("click", function () {
-          console.log("[VoiceCall] Emitting startVoiceCall with room:", room);
-          document.querySelector("#outgoing-call").classList.remove("hidden");
-          socket.emit("startVoiceCall", { room });
-        });
-
-      socket.on("incomingVoiceCall", function () {
-        console.log("[VoiceCall] incomingVoiceCall event received");
-        document.querySelector("#outgoing-call").classList.add("hidden");
-        document.querySelector("#incoming-call").classList.remove("hidden");
-        // Mark as voice call
-        document.querySelector("#incoming-call p").textContent =
-          "Incoming Voice Call...";
-      });
-
-      socket.on("voiceCallAccepted", function () {
-        document.querySelector("#outgoing-call").classList.add("hidden");
-        startVoiceCall(true);
-      });
-
-      document
-        .querySelector("#accept-call")
-        .addEventListener("click", function () {
-          if (
-            document
-              .querySelector("#incoming-call p")
-              .textContent.includes("Voice")
-          ) {
-            document.querySelector("#incoming-call").classList.add("hidden");
-            startVoiceCall(false);
-            socket.emit("acceptVoiceCall", { room });
+        socket.on("joined", function (roomname) {
+          room = roomname;
+          if (room) {
+            document.querySelector(".nobody").classList.add("hidden");
+            setChatEnabled(true);
+          } else {
+            // Not matched, waiting for partner
+            document.querySelector(".nobody").classList.remove("hidden");
+            document.getElementById(
+              "message-container"
+            ).innerHTML = `<div class=\"text-zinc-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2/3 text-center nobody\">Wait Until Your Partner Connects.</div>`;
+            setChatEnabled(false);
           }
         });
 
-      document
-        .querySelector("#reject-call")
-        .addEventListener("click", function () {
-          if (
-            document
-              .querySelector("#incoming-call p")
-              .textContent.includes("Voice")
-          ) {
-            document.querySelector("#incoming-call").classList.add("hidden");
-            socket.emit("rejectVoiceCall", { room });
-          }
+        socket.on("message", function (message) {
+          if (!room) return; // Don't display messages if not in a room
+          receiveMessage(message);
         });
 
-      socket.on("voiceCallRejected", function () {
-        document.querySelector("#outgoing-call").classList.add("hidden");
-        document.querySelector("#call-denied").classList.remove("hidden");
-        document.querySelector("#call-denied p").textContent =
-          "Voice Call Denied";
-      });
+        chatform.addEventListener("submit", function (event) {
+          event.preventDefault();
+          if (!room) {
+            alert(
+              "You are not connected to a partner. Please wait for a new partner."
+            );
+            return;
+          }
+          const msg = messagebox.value.trim();
+          if (!msg) return;
+          socket.emit("message", { room: room, message: msg });
+          attachMessage(msg);
+          messagebox.value = "";
+        });
 
-      document.getElementById("cancel-call").onclick = function () {
-        if (!voiceCallActive) {
-          document.querySelector("#outgoing-call").classList.add("hidden");
-          socket.emit("cancelVoiceCall", { room });
+        function attachMessage(message) {
+          const row = document.createElement("div");
+          row.className = "tg-row justify-end";
+          const bubble = document.createElement("div");
+          bubble.className = "tg-bubble sent";
+          bubble.innerHTML = message;
+          row.appendChild(bubble);
+          document.getElementById("message-container").appendChild(row);
+          document.querySelector("#message-container").scrollTop =
+            document.querySelector("#message-container").scrollHeight;
         }
-      };
 
-      function startVoiceCall(isCaller) {
-        voiceCallActive = true;
-        // Hide video UI if visible
-        document.querySelector(".videoblock").classList.add("hidden");
-        // Setup audio elements
-        let audioElem = document.getElementById("audioPlayer");
-        audioElem.style.display = "block";
-        audioElem.srcObject = null;
-        // Setup WebRTC for audio only
+        function receiveMessage(message) {
+          const row = document.createElement("div");
+          row.className = "tg-row justify-start";
+          const avatar = document.createElement("div");
+          avatar.className = "tg-avatar";
+          avatar.textContent = "S";
+          row.appendChild(avatar);
+          const bubble = document.createElement("div");
+          bubble.className = "tg-bubble received";
+          bubble.innerHTML = message;
+          row.appendChild(bubble);
+          document.getElementById("message-container").appendChild(row);
+          document.querySelector("#message-container").scrollTop =
+            document.querySelector("#message-container").scrollHeight;
+        }
+
+        // WEBRTC START
         const rtcSettings = {
           iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
         };
-        voicePeerConnection = new RTCPeerConnection(rtcSettings);
-        voiceRemoteStream = new MediaStream();
-        audioElem.srcObject = voiceRemoteStream;
-        voicePeerConnection.ontrack = (event) => {
-          event.streams[0].getTracks().forEach((track) => {
-            voiceRemoteStream.addTrack(track);
-          });
+
+        const initialize = async () => {
+          socket.on("signalingMessage", handleSignalingMessage);
+
+          try {
+            localStream = await navigator.mediaDevices.getUserMedia({
+              audio: true,
+              video: true,
+            });
+            document.querySelector("#localVideo").srcObject = localStream;
+            document.querySelector("#localVideo").style.display = "block";
+
+            initiateOffer();
+
+            inCall = true;
+          } catch (err) {
+            console.log("Rejected by browser" + err);
+          }
         };
-        voicePeerConnection.onicecandidate = (event) => {
-          if (event.candidate) {
-            socket.emit("voiceSignalingMessage", {
+
+        const initiateOffer = async () => {
+          await createPeerConnection();
+          try {
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+            socket.emit("signalingMessage", {
               room,
               message: JSON.stringify({
-                type: "candidate",
-                candidate: event.candidate,
+                type: "offer",
+                offer,
               }),
             });
+          } catch (err) {
+            console.log("error in creating offer" + err);
           }
         };
-        navigator.mediaDevices
-          .getUserMedia({ audio: true, video: false })
-          .then((stream) => {
-            voiceLocalStream = stream;
-            stream.getTracks().forEach((track) => {
-              voicePeerConnection.addTrack(track, stream);
+
+        const createPeerConnection = () => {
+          peerConnection = new RTCPeerConnection(rtcSettings);
+
+          remoteStream = new MediaStream();
+
+          document.querySelector("#remoteVideo").srcObject = remoteStream;
+          document.querySelector("#remoteVideo").style.display = "block";
+          document.querySelector("#localVideo").classList.add("smallFrame");
+
+          localStream.getTracks().forEach((track) => {
+            peerConnection.addTrack(track, localStream);
+          });
+
+          peerConnection.ontrack = (event) => {
+            event.streams[0].getTracks().forEach((track) => {
+              remoteStream.addTrack(track);
             });
-            if (isCaller) {
-              voicePeerConnection.createOffer().then((offer) => {
-                voicePeerConnection.setLocalDescription(offer);
-                socket.emit("voiceSignalingMessage", {
-                  room,
-                  message: JSON.stringify({ type: "offer", offer }),
-                });
+          };
+
+          peerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+              console.log("Sending Ice Candidates");
+
+              socket.emit("signalingMessage", {
+                room,
+                message: JSON.stringify({
+                  type: "candidate",
+                  candidate: event.candidate,
+                }),
               });
             }
-          });
-      }
+          };
 
-      socket.on("voiceSignalingMessage", async function (message) {
-        const { type, offer, answer, candidate } = JSON.parse(message);
-        if (type === "offer") {
-          if (!voicePeerConnection) startVoiceCall(false);
-          await voicePeerConnection.setRemoteDescription(offer);
-          const answerObj = await voicePeerConnection.createAnswer();
-          await voicePeerConnection.setLocalDescription(answerObj);
-          socket.emit("voiceSignalingMessage", {
-            room,
-            message: JSON.stringify({ type: "answer", answer: answerObj }),
-          });
-        }
-        if (type === "answer") {
-          await voicePeerConnection.setRemoteDescription(answer);
-        }
-        if (type === "candidate" && voicePeerConnection) {
-          try {
-            await voicePeerConnection.addIceCandidate(candidate);
-          } catch (error) {
-            console.log(error);
+          peerConnection.onconnectionstatechange = () => {
+            console.log(
+              "connection state change hui ",
+              peerConnection.connectionState
+            );
+          };
+        };
+
+        const handleSignalingMessage = async (message) => {
+          const { type, offer, answer, candidate } = JSON.parse(message);
+          if (type === "offer") handleOffer(offer);
+          if (type === "answer") handleAnswer(answer);
+          if (type === "candidate" && peerConnection) {
+            try {
+              await peerConnection.addIceCandidate(candidate);
+            } catch (error) {
+              console.log(error);
+            }
           }
-        }
-        if (type === "hangup") {
-          endVoiceCall();
-        }
-      });
+          if (type === "hangup") {
+            hangup();
+          }
+        };
 
-      function endVoiceCall() {
-        if (voicePeerConnection) {
-          voicePeerConnection.close();
-          voicePeerConnection = null;
-        }
-        if (voiceLocalStream) {
-          voiceLocalStream.getTracks().forEach((track) => track.stop());
-        }
-        document.getElementById("audioPlayer").style.display = "none";
-        voiceCallActive = false;
-      }
+        const handleOffer = async (offer) => {
+          await createPeerConnection();
+          try {
+            await peerConnection.setRemoteDescription(offer);
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            socket.emit("signalingMessage", {
+              room,
+              message: JSON.stringify({ type: "answer", answer }),
+            });
+            inCall = true;
+          } catch (error) {
+            console.log("failed to handle offer");
+          }
+        };
 
-      // --- Notify on disconnect/leave and Next button logic ---
-      document
-        .getElementById("next-btn")
-        .addEventListener("click", function () {
-          socket.emit("next");
-          // Optionally, reset UI for waiting state
-          document.querySelector(".nobody").classList.remove("hidden");
-          document.getElementById(
-            "message-container"
-          ).innerHTML = `<div class="text-zinc-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2/3 text-center nobody">Wait Until Your Partner Connects.</div>`;
-          // Hide call popups/audio/video
-          document.querySelector(".videoblock").classList.add("hidden");
-          document.getElementById("audioPlayer").style.display = "none";
+        const handleAnswer = async (answer) => {
+          try {
+            await peerConnection.setRemoteDescription(answer);
+          } catch (error) {
+            console.log("failed to handle answer");
+          }
+        };
+
+        document
+          .querySelector("#video-call-btn")
+          .addEventListener("click", function () {
+            document.querySelector("#outgoing-call").classList.remove("hidden");
+            socket.emit("startVideoCall", { room });
+          });
+
+        document.getElementById("cancel-call").onclick = function () {
+          document.querySelector("#outgoing-call").classList.add("hidden");
+          socket.emit("cancelCall", { room });
+        };
+
+        socket.on("incomingCall", function () {
+          document.querySelector("#outgoing-call").classList.add("hidden");
+          document.querySelector("#incoming-call").classList.remove("hidden");
         });
 
-      socket.on("partnerDisconnected", function () {
-        alert("Your partner has left or disconnected.");
-        document.querySelector(".nobody").classList.remove("hidden");
-        document.getElementById(
-          "message-container"
-        ).innerHTML = `<div class=\"text-zinc-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2/3 text-center nobody\">Wait Until Your Partner Connects.</div>`;
-        document.querySelector(".videoblock").classList.add("hidden");
-        document.getElementById("audioPlayer").style.display = "none";
-        room = null;
-        setChatEnabled(false);
-      });
+        socket.on("callAccepted", function () {
+          document.querySelector("#outgoing-call").classList.add("hidden");
+          initialize();
+          document.querySelector(".videoblock").classList.remove("hidden");
+        });
 
-      // On page load, disable chat and Next until matched
-      setChatEnabled(false);
+        document
+          .querySelector("#accept-call")
+          .addEventListener("click", function () {
+            document.querySelector("#incoming-call").classList.add("hidden");
+            initialize();
+            document.querySelector(".videoblock").classList.remove("hidden");
+            socket.emit("acceptCall", { room });
+          });
+
+        document
+          .querySelector("#reject-call")
+          .addEventListener("click", function () {
+            document.querySelector("#incoming-call").classList.add("hidden");
+            socket.emit("rejectCall", { room });
+          });
+
+        socket.on("callRejected", function () {
+          document.querySelector("#outgoing-call").classList.add("hidden");
+          document.querySelector("#call-denied").classList.remove("hidden");
+        });
+
+        document.getElementById("close-denied").onclick = function () {
+          document.querySelector("#call-denied").classList.add("hidden");
+        };
+
+        document
+          .querySelector("#hangup")
+          .addEventListener("click", function () {
+            hangup();
+          });
+
+        function hangup() {
+          if (peerConnection) {
+            peerConnection.close();
+            peerConnection = null;
+            localStream.getTracks().forEach((track) => track.stop());
+
+            document.querySelector(".videoblock").classList.add("hidden");
+            socket.emit("signalingMessage", {
+              room,
+              message: JSON.stringify({ type: "hangup" }),
+            });
+            inCall = false;
+          }
+        }
+
+        // File sending
+        document.getElementById("fileBtn").onclick = () =>
+          document.getElementById("fileInput").click();
+        document.getElementById("fileInput").onchange = function (e) {
+          const files = e.target.files;
+          for (let file of files) {
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+              if (file.type.startsWith("image/")) {
+                socket.emit("message", {
+                  room,
+                  message: `<img src='${evt.target.result}' alt='Image' />`,
+                });
+                attachMessage(`<img src='${evt.target.result}' alt='Image' />`);
+              } else if (file.type.startsWith("video/")) {
+                socket.emit("message", {
+                  room,
+                  message: `<video src='${evt.target.result}' controls />`,
+                });
+                attachMessage(`<video src='${evt.target.result}' controls />`);
+              }
+            };
+            reader.readAsDataURL(file);
+          }
+          e.target.value = "";
+        };
+
+        // Audio recording
+        let mediaRecorder,
+          audioChunks = [];
+        document.getElementById("audioBtn").onclick = async function () {
+          if (!mediaRecorder || mediaRecorder.state === "inactive") {
+            const stream = await navigator.mediaDevices.getUserMedia({
+              audio: true,
+            });
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+            mediaRecorder.onstop = () => {
+              const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+              const reader = new FileReader();
+              reader.onloadend = function () {
+                const base64data = reader.result;
+                socket.emit("message", {
+                  room,
+                  message: `<audio src='${base64data}' controls />`,
+                });
+                attachMessage(`<audio src='${base64data}' controls />`);
+                audioChunks = [];
+                document.getElementById("audioIcon").src = "/voice.png";
+              };
+              reader.readAsDataURL(audioBlob);
+            };
+            mediaRecorder.start();
+            // Change icon to recording
+            document.getElementById("audioIcon").src = "/wave.png";
+            setTimeout(() => {
+              if (mediaRecorder && mediaRecorder.state === "recording")
+                mediaRecorder.stop();
+            }, 5000);
+          }
+        };
+
+        // Mic and video toggle logic
+        let micOn = true,
+          videoOn = true;
+        document.getElementById("micButton").onclick = function () {
+          micOn = !micOn;
+          if (localStream)
+            localStream
+              .getAudioTracks()
+              .forEach((track) => (track.enabled = micOn));
+          document.getElementById("micIcon").src = micOn
+            ? "/mic-on.png"
+            : "/mic-off.png";
+        };
+        document.getElementById("cameraButton").onclick = function () {
+          videoOn = !videoOn;
+          if (localStream)
+            localStream
+              .getVideoTracks()
+              .forEach((track) => (track.enabled = videoOn));
+          document.getElementById("videoIcon").src = videoOn
+            ? "/video-on.png"
+            : "/video-off.png";
+        };
+
+        // VOICE CALL FUNCTIONALITY
+        document
+          .querySelector("#voice-call-btn")
+          .addEventListener("click", function () {
+            console.log("[VoiceCall] Emitting startVoiceCall with room:", room);
+            document.querySelector("#outgoing-call").classList.remove("hidden");
+            socket.emit("startVoiceCall", { room });
+          });
+
+        socket.on("incomingVoiceCall", function () {
+          console.log("[VoiceCall] incomingVoiceCall event received");
+          document.querySelector("#outgoing-call").classList.add("hidden");
+          document.querySelector("#incoming-call").classList.remove("hidden");
+          // Mark as voice call
+          document.querySelector("#incoming-call p").textContent =
+            "Incoming Voice Call...";
+        });
+
+        socket.on("voiceCallAccepted", function () {
+          document.querySelector("#outgoing-call").classList.add("hidden");
+          startVoiceCall(true);
+        });
+
+        document
+          .querySelector("#accept-call")
+          .addEventListener("click", function () {
+            if (
+              document
+                .querySelector("#incoming-call p")
+                .textContent.includes("Voice")
+            ) {
+              document.querySelector("#incoming-call").classList.add("hidden");
+              startVoiceCall(false);
+              socket.emit("acceptVoiceCall", { room });
+            }
+          });
+
+        document
+          .querySelector("#reject-call")
+          .addEventListener("click", function () {
+            if (
+              document
+                .querySelector("#incoming-call p")
+                .textContent.includes("Voice")
+            ) {
+              document.querySelector("#incoming-call").classList.add("hidden");
+              socket.emit("rejectVoiceCall", { room });
+            }
+          });
+
+        socket.on("voiceCallRejected", function () {
+          document.querySelector("#outgoing-call").classList.add("hidden");
+          document.querySelector("#call-denied").classList.remove("hidden");
+          document.querySelector("#call-denied p").textContent =
+            "Voice Call Denied";
+        });
+
+        document.getElementById("cancel-call").onclick = function () {
+          if (!voiceCallActive) {
+            document.querySelector("#outgoing-call").classList.add("hidden");
+            socket.emit("cancelVoiceCall", { room });
+          }
+        };
+
+        function startVoiceCall(isCaller) {
+          voiceCallActive = true;
+          // Hide video UI if visible
+          document.querySelector(".videoblock").classList.add("hidden");
+          // Setup audio elements
+          let audioElem = document.getElementById("audioPlayer");
+          audioElem.style.display = "block";
+          audioElem.srcObject = null;
+          // Setup WebRTC for audio only
+          const rtcSettings = {
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+          };
+          voicePeerConnection = new RTCPeerConnection(rtcSettings);
+          voiceRemoteStream = new MediaStream();
+          audioElem.srcObject = voiceRemoteStream;
+          voicePeerConnection.ontrack = (event) => {
+            event.streams[0].getTracks().forEach((track) => {
+              voiceRemoteStream.addTrack(track);
+            });
+          };
+          voicePeerConnection.onicecandidate = (event) => {
+            if (event.candidate) {
+              socket.emit("voiceSignalingMessage", {
+                room,
+                message: JSON.stringify({
+                  type: "candidate",
+                  candidate: event.candidate,
+                }),
+              });
+            }
+          };
+          navigator.mediaDevices
+            .getUserMedia({ audio: true, video: false })
+            .then((stream) => {
+              voiceLocalStream = stream;
+              stream.getTracks().forEach((track) => {
+                voicePeerConnection.addTrack(track, stream);
+              });
+              if (isCaller) {
+                voicePeerConnection.createOffer().then((offer) => {
+                  voicePeerConnection.setLocalDescription(offer);
+                  socket.emit("voiceSignalingMessage", {
+                    room,
+                    message: JSON.stringify({ type: "offer", offer }),
+                  });
+                });
+              }
+            });
+        }
+
+        socket.on("voiceSignalingMessage", async function (message) {
+          const { type, offer, answer, candidate } = JSON.parse(message);
+          if (type === "offer") {
+            if (!voicePeerConnection) startVoiceCall(false);
+            await voicePeerConnection.setRemoteDescription(offer);
+            const answerObj = await voicePeerConnection.createAnswer();
+            await voicePeerConnection.setLocalDescription(answerObj);
+            socket.emit("voiceSignalingMessage", {
+              room,
+              message: JSON.stringify({ type: "answer", answer: answerObj }),
+            });
+          }
+          if (type === "answer") {
+            await voicePeerConnection.setRemoteDescription(answer);
+          }
+          if (type === "candidate" && voicePeerConnection) {
+            try {
+              await voicePeerConnection.addIceCandidate(candidate);
+            } catch (error) {
+              console.log(error);
+            }
+          }
+          if (type === "hangup") {
+            endVoiceCall();
+          }
+        });
+
+        function endVoiceCall() {
+          if (voicePeerConnection) {
+            voicePeerConnection.close();
+            voicePeerConnection = null;
+          }
+          if (voiceLocalStream) {
+            voiceLocalStream.getTracks().forEach((track) => track.stop());
+          }
+          const audioPlayer = document.getElementById("audioPlayer");
+          if (audioPlayer) audioPlayer.style.display = "none";
+          voiceCallActive = false;
+        }
+
+        // --- Notify on disconnect/leave and Next button logic ---
+        if (nextBtn) {
+          nextBtn.addEventListener("click", function () {
+            socket.emit("next");
+            document.querySelector(".nobody").classList.remove("hidden");
+            if (messagecontainer)
+              messagecontainer.innerHTML = `<div class=\"text-zinc-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2/3 text-center nobody\">Wait Until Your Partner Connects.</div>`;
+            const videoblock = document.querySelector(".videoblock");
+            if (videoblock) videoblock.classList.add("hidden");
+            const audioPlayer = document.getElementById("audioPlayer");
+            if (audioPlayer) audioPlayer.style.display = "none";
+          });
+        }
+
+        socket.on("partnerDisconnected", function () {
+          alert(
+            "Your partner has left or disconnected. You will be matched with a new partner when available."
+          );
+          // Show a system message in the chat area
+          document.getElementById("message-container").innerHTML =
+            '<div class="tg-row justify-center"><div class="tg-bubble" style="background:#f3f4f6;color:#666;text-align:center;">Your partner has left the chat. You will be matched with a new partner when available.</div></div>';
+          document.querySelector(".nobody").classList.remove("hidden");
+          document.querySelector(".videoblock").classList.add("hidden");
+          document.getElementById("audioPlayer").style.display = "none";
+          room = null;
+          setChatEnabled(false);
+          // After 2 seconds, show the waiting message
+          setTimeout(function () {
+            document.getElementById(
+              "message-container"
+            ).innerHTML = `<div class=\"text-zinc-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2/3 text-center nobody\">Wait Until Your Partner Connects.</div>`;
+          }, 2000);
+        });
+
+        // On page load, disable chat and Next until matched
+        setChatEnabled(false);
+
+        socket.on("disconnect", function () {
+          notifyAndLeave(socket);
+          // Remove from waitingusers if present
+          let idx = waitingusers.indexOf(socket);
+          if (idx !== -1) waitingusers.splice(idx, 1);
+        });
+
+        // Leave button logic
+        console.log("leaveBtn:", leaveBtn);
+        if (leaveBtn) {
+          leaveBtn.addEventListener("click", function () {
+            socket.emit("leave");
+            // Reset UI for waiting state
+            document.querySelector(".nobody").classList.remove("hidden");
+            if (messagecontainer)
+              messagecontainer.innerHTML = `<div class=\"text-zinc-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2/3 text-center nobody\">Wait Until Your Partner Connects.</div>`;
+            const videoblock = document.querySelector(".videoblock");
+            if (videoblock) videoblock.classList.add("hidden");
+            const audioPlayer = document.getElementById("audioPlayer");
+            if (audioPlayer) audioPlayer.style.display = "none";
+            room = null;
+            setChatEnabled(false);
+          });
+        } else {
+          console.error("Leave button not found in DOM!");
+        }
+      }); // End DOMContentLoaded
     </script>
   </body>
 </html>
