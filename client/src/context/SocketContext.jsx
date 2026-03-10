@@ -20,7 +20,7 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     console.log("SocketProvider: Initializing connection...");
-    const newSocket = io('http://localhost:5000');
+    const newSocket = io('https://strangersync-fardeen.onrender.com');
     setSocket(newSocket);
 
     // Get media early
